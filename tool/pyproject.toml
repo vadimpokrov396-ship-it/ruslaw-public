@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ruslaw-fetch"
+version = "0.1.0"
+description = "Polite downloader for the current (amendments-merged) official text of Russian codes and federal laws, from actual.pravo.gov.ru"
+readme = "../README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = ["requests>=2.28", "beautifulsoup4>=4.11"]
+
+[project.scripts]
+ruslaw-fetch = "ruslaw_fetch.cli:main"
+
+[tool.setuptools]
+packages = ["ruslaw_fetch"]
+
+[tool.setuptools.package-data]
+ruslaw_fetch = ["codes_registry.json", "laws_registry.json"]

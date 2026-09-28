@@ -1,0 +1,52 @@
+# DISABLED BY DEFAULT. This file is named `weekly-update.yml.disabled` on purpose, so GitHub
+# Actions does NOT pick it up. To enable weekly auto-updates:
+#   1. rename to `.github/workflows/weekly-update.yml` (drop the `.disabled` suffix)
+#   2. make sure Actions is enabled for this repo (Settings -> Actions -> General -> Allow all
+#      actions), and that the default GITHUB_TOKEN has "Read and write permissions"
+#      (Settings -> Actions -> General -> Workflow permissions)
+#   3. commit + push
+#
+# It runs `ruslaw-fetch update --since <7 days ago>` and commits any changed/new files. It does
+# NOT force-push, does NOT touch git history, and only commits if something actually changed.
+
+name: Weekly law update
+
+on:
+  # schedule:
+  #   - cron: "0 6 * * 1"  # every Monday 06:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install tool
+        run: pip install -r tool/requirements.txt
+
+      - name: Compute since-date (7 days ago)
+        id: since
+        run: echo "date=$(date -d '7 days ago' +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Run incremental update
+        working-directory: tool
+        run: python3 -m ruslaw_fetch --out ../data update --since ${{ steps.since.outputs.date }}
+
+      - name: Commit changes if any
+        run: |
+          git config user.name "ruslaw-fetch bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "No changes."
+          else
+            git commit -m "Weekly auto-update: $(date +%Y-%m-%d)"
+            git push
+          fi
